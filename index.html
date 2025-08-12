@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>B Cellars — Vineyard Map (Baseline v1)</title>
+  <title>B Cellars — Vineyard Map</title>
 
   <!-- Mapbox GL JS -->
   <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
@@ -49,7 +49,19 @@
     .mapboxgl-popup-content{border-radius:12px; padding:10px 12px; background:#0f1219; color:#eef2f7; border:1px solid #273049; text-align:left;}
 
     @media (max-width:900px){.app{grid-template-columns:1fr;} .sidebar{display:none;} }
-  </style>
+  
+/* Popup styling only (safe) */
+.mapboxgl-popup-content {
+  background: #ffffff !important;
+  border: 2px solid #cc4346 !important;
+  padding: 5% !important;
+  border-radius: 8px;
+}
+.mapboxgl-popup-close-button {
+  color: #000000 !important;
+}
+
+</style>
 </head>
 <body>
   <div class="app">
