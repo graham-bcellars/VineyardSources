@@ -49,7 +49,19 @@
     .mapboxgl-popup-content{border-radius:12px; padding:10px 12px; background:#0f1219; color:#eef2f7; border:1px solid #273049; text-align:left;}
 
     @media (max-width:900px){.app{grid-template-columns:1fr;} .sidebar{display:none;} }
-  </style>
+  
+/* Custom popup styling like sidebar */
+.mapboxgl-popup-content {
+    background-color: white !important;
+    border: 2px solid #cc4346 !important;
+    padding: 5% !important;
+    color: #111318 !important;
+}
+.mapboxgl-popup-close-button {
+    color: black !important;
+}
+
+</style>
 </head>
 <body>
   <div class="app">
@@ -195,12 +207,36 @@
       document.querySelectorAll('.item').forEach(el => el.classList.toggle('active', el.dataset.id === name));
       const active = document.querySelector('.item.active'); if (active) active.scrollIntoView({block:'nearest', behavior:'smooth'});
     }
-    function showPopup(name){
-      const rec = nameIndex[name]; if (!rec) return;
-      const p = rec.props, lngLat = rec.center;
-      const html = `
-        <div>
-          <div style="font-weight:700; margin-bottom:4px;">${p.Name || 'Vineyard'}</div>
+    
+function showPopup(name){
+  const rec = nameIndex[name]; if (!rec) return;
+  const p = rec.props, lngLat = rec.center;
+  
+  // AVA label
+  const avaText = p.SubAVA ? `AVA: ${p.SubAVA}` : (p.AVA ? `AVA: ${p.AVA}` : '');
+  
+  // Collect varietals (keys: Varietal 1, Varietal 2, etc)
+  const varietals = [];
+  for (const key in p) {
+    if (/^Varietal\s+\d+$/i.test(key) && p[key]) {
+      varietals.push(String(p[key]).trim());
+    }
+  }
+  const vLabel = varietals.length > 1 ? 'Varietals' : 'Varietal';
+  const varietalLine = varietals.length ? `${vLabel}: ${varietals.join(', ')}` : '';
+  
+  const html = `
+    <div style="text-align:left;">
+      <div style="font-weight:700; margin-bottom:4px; text-align:center;">${p.Name || 'Vineyard'}</div>
+      ${avaText ? `<div>${avaText}</div>` : ''}
+      ${varietalLine ? `<div>${varietalLine}</div>` : ''}
+      ${p.Facts ? `<div style="margin-top:6px;">${p.Facts}</div>` : ''}
+      ${p.URL ? `<div style="margin-top:8px;"><a class="btn" href="${p.URL}" target="_blank" rel="noopener">Learn more →</a></div>` : ''}
+    </div>`;
+  popup.setLngLat(lngLat).setHTML(html).addTo(map);
+}
+
+</div>
           ${p.SubAVA ? `<div style="font-size:12px; opacity:.8;">${p.SubAVA}</div>` : ''}
           ${p.Facts ? `<div style="margin-top:6px;">${p.Facts}</div>` : ''}
           ${p.URL ? `<div style="margin-top:8px;"><a class="btn" href="${p.URL}" target="_blank" rel="noopener">Learn more →</a></div>` : ''}
