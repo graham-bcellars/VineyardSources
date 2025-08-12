@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>B Cellars — Vineyard Map</title>
+  <title>B Cellars — Vineyard Map (Baseline v1)</title>
 
   <!-- Mapbox GL JS -->
   <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
@@ -377,9 +377,7 @@
       buildList(namesList);
 
       // Map layer filters
-      const beckFilter = ['all',
-        ['==', ['slice', ['get','Name'], 0, 11], 'Beckstoffer']
-      ];
+      const beckFilter = ['all', ['==', ['slice', ['downcase', ['get','Name']], 0, 11], 'beckstoffer']];
       if (map.getLayer('vineyard-fill')) map.setFilter('vineyard-fill', beckFilter);
       if (map.getLayer('vineyard-outline')) map.setFilter('vineyard-outline', beckFilter);
 
@@ -402,8 +400,8 @@
       buildList(namesList);
 
       // Clear map filters
-      if (map.getLayer('vineyard-fill')) map.setFilter('vineyard-fill', true);
-      if (map.getLayer('vineyard-outline')) map.setFilter('vineyard-outline', true);
+      if (map.getLayer('vineyard-fill')) map.setFilter('vineyard-fill', null);
+      if (map.getLayer('vineyard-outline')) map.setFilter('vineyard-outline', null);
 
       if (map.getSource('vineyard-points')){
         const labelsFC = namesAsFeatureCollection(namesList);
