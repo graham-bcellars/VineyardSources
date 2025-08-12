@@ -46,19 +46,15 @@
     .sidebar-toggle-fab .btn{box-shadow:0 6px 20px rgba(0,0,0,.35);}
 
     .mapboxgl-popup{font:14px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
-    .mapboxgl-popup-content{border-radius:12px; padding:10px 12px; background:#0f1219; color:#111318; border:1px solid #273049; text-align:center;}
+    .mapboxgl-popup-content{border-radius:12px; padding:10px 12px; background:#0f1219; color:#eef2f7; border:1px solid #273049; text-align:left;}
 
     @media (max-width:900px){.app{grid-template-columns:1fr;} .sidebar{display:none;} }
   
-/* Popup styling only (safe) */
-.mapboxgl-popup-content {
-  background: #ffffff !important;
-  border: 2px solid #cc4346 !important;
-  padding: 5% !important;
-  border-radius: 8px;
-}
-.mapboxgl-popup-close-button {
-  color: #000000 !important;
+/* Beckstoffer button active state */
+.btn.active {
+  background-color: #cc4346 !important;
+  color: white !important;
+  border-color: #a83235 !important;
 }
 
 </style>
@@ -67,6 +63,11 @@
   <div class="app">
     <aside class="sidebar" aria-label="Vineyard navigation" id="sidebar">
       <div class="brand">
+      <div class="beckstoffer-filter" style="display:flex; gap:8px; margin-bottom:10px;">
+        <button id="show-beckstoffer" class="btn primary" style="flex:1;">Show Beckstoffer</button>
+        <button id="show-all" class="btn secondary" style="flex:1;">Show All</button>
+      </div>
+
         <h1>Vineyard Sources</h1>
       </div>
       <div class="controls">
@@ -359,59 +360,63 @@
       });
     }
 
-    // ===== Init =====
-    map.on('load', async () => {
-      // Polygons from tileset
-      map.addSource('vineyard-polygons', { type:'vector', url: CONFIG.vector.url });
-      map.addLayer({ id:'vineyard-fill', type:'fill', source:'vineyard-polygons', 'source-layer': CONFIG.vector.sourceLayer, paint:{ 'fill-color':'#c64b4b', 'fill-opacity':0.35 } });
-      map.addLayer({ id:'vineyard-outline', type:'line', source:'vineyard-polygons', 'source-layer': CONFIG.vector.sourceLayer, paint:{ 'line-color':'#c64b4b', 'line-width':1.2 } });
+    
+    
+    // ===== Beckstoffer Filter Logic =====
+    const btnBeck = document.getElementById('show-beckstoffer');
+    const btnAll = document.getElementById('show-all');
 
-      try {
-        await rebuildFromDataset();
-        fitAll();
-      } catch (e) {
-        console.error(e);
-        alert('Failed to load dataset features. Check token or dataset permissions.');
+    function applyBeckstofferFilter() {
+      btnBeck.classList.add('active');
+      btnAll.classList.remove('active');
+
+      const filteredNames = Object.keys(nameIndex)
+        .filter(nm => nm.toLowerCase().startsWith('beckstoffer'))
+        .sort((a,b)=>a.localeCompare(b));
+      namesList = filteredNames;
+      buildList(namesList);
+
+      // Map layer filters
+      const beckFilter = ['all',
+        ['==', ['slice', ['get','Name'], 0, 11], 'Beckstoffer']
+      ];
+      if (map.getLayer('vineyard-fill')) map.setFilter('vineyard-fill', beckFilter);
+      if (map.getLayer('vineyard-outline')) map.setFilter('vineyard-outline', beckFilter);
+
+      if (map.getSource('vineyard-points')){
+        const labelsFC = namesAsFeatureCollection(namesList);
+        map.getSource('vineyard-points').setData(labelsFC);
       }
 
-      // Polygon click -> select by Name (fill + outline are clickable)
-      ['vineyard-fill','vineyard-outline'].forEach(layer => {
-        map.on('click', layer, (e)=>{
-          const f = e.features && e.features[0]; if (!f) return;
-          const name = getName(f.properties);
-          if (name) { selectByName(name); }
-        });
-        map.on('mouseenter', layer, () => map.getCanvas().style.cursor='pointer');
-        map.on('mouseleave', layer, () => map.getCanvas().style.cursor='');
-      });
-
-      // Deep link
-      const m = location.hash.match(/id=([^&]+)/); if (m) setTimeout(()=>selectByName(decodeURIComponent(m[1])), 300);
-    });
-
-    // ===== UI events =====
-    fitAllBtn.addEventListener('click', fitAll);
-    filterEl.addEventListener('input', (e)=> doFilter(e.target.value));
-
-    // Sidebar collapse / expand (with floating reopen button)
-    let collapsed = false;
-    function setCollapsed(val){
-      collapsed = !!val;
-      appEl.classList.toggle('sidebar-collapsed', collapsed);
-      document.getElementById('sidebar').setAttribute('aria-hidden', collapsed ? 'true' : 'false');
-      if (collapsed && window.innerWidth > 900) { fab.style.display = 'block'; } else { fab.style.display = 'none'; }
-      setTimeout(()=>map.resize(), 60);
+      if (typeof countEl !== 'undefined' && countEl) {
+        countEl.textContent = `${namesList.length} vineyard${namesList.length===1?'':'s'}`;
+      }
     }
-    collapseBtn.addEventListener('click', () => setCollapsed(!collapsed));
-    expandBtn.addEventListener('click', () => setCollapsed(false));
-    window.addEventListener('resize', () => { if (window.innerWidth <= 900) fab.style.display='none'; else if (collapsed) fab.style.display='block'; });
 
-    // Keyboard: S to toggle sidebar, / to focus filter
-    document.addEventListener('keydown', (e)=>{
-      if (e.key === '/' && document.activeElement !== filterEl) { e.preventDefault(); filterEl.focus(); }
-      else if (e.key.toLowerCase() === 's' && window.innerWidth > 900) { setCollapsed(!collapsed); }
-      else if (e.key === 'Escape') { popup.remove(); history.replaceState(null, '', location.pathname); const a=document.querySelector('.item.active'); if(a) a.classList.remove('active'); }
-    });
-  </script>
+    function showAllVineyards() {
+      btnAll.classList.add('active');
+      btnBeck.classList.remove('active');
+
+      const allNames = Object.keys(nameIndex).sort((a,b)=>a.localeCompare(b));
+      namesList = allNames;
+      buildList(namesList);
+
+      // Clear map filters
+      if (map.getLayer('vineyard-fill')) map.setFilter('vineyard-fill', true);
+      if (map.getLayer('vineyard-outline')) map.setFilter('vineyard-outline', true);
+
+      if (map.getSource('vineyard-points')){
+        const labelsFC = namesAsFeatureCollection(namesList);
+        map.getSource('vineyard-points').setData(labelsFC);
+      }
+
+      if (typeof countEl !== 'undefined' && countEl) {
+        countEl.textContent = `${namesList.length} vineyard${namesList.length===1?'':'s'}`;
+      }
+    }
+
+    if (btnBeck) btnBeck.addEventListener('click', applyBeckstofferFilter);
+    if (btnAll) btnAll.addEventListener('click', showAllVineyards);
+</script>
 </body>
 </html>
