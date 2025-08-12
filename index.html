@@ -61,6 +61,90 @@
   color: #000000 !important;
 }
 
+
+/* ---------- Mobile sidebar / bottom sheet ---------- */
+.mobile-toggle{
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 5;
+  display: none; /* hidden on desktop */
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  font: 600 14px/1 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+.mobile-panel{
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 82vh;
+  background: #ffffff;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -12px 30px rgba(0,0,0,.18);
+  transform: translateY(105%);
+  transition: transform .28s ease;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+}
+.mobile-panel.open{ transform: translateY(0%); }
+.mobile-panel-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.mobile-title{
+  font-weight: 800; font-size: 16px;
+}
+.mobile-close{
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  width: 36px; height: 32px;
+  font-size: 20px; line-height: 28px;
+}
+.mobile-count{
+  padding: 8px 16px;
+  color: #6b7280;
+  font-size: 13px;
+}
+.mobile-list{
+  padding: 8px 12px 18px 12px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 8px;
+  display: grid;
+}
+.mobile-item{
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display:flex; align-items:center; justify-content:space-between;
+  background: #fff;
+}
+.mi-name{
+  font-weight: 600;
+  font-size: 14px;
+  margin-right: 8px;
+}
+.mobile-fly{
+  border-radius: 999px;
+  padding: 8px 12px;
+  border: 1px solid #cc4346;
+  background: #cc4346;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Show mobile UI & hide desktop sidebar below 768px */
+@media (max-width: 768px){
+  .sidebar{ display: none !important; }
+  .mobile-toggle{ display: inline-flex; align-items:center; }
+}
+
 </style>
 </head>
 <body>
@@ -82,6 +166,20 @@
     </aside>
 
     <div id="map" role="region" aria-label="Map of vineyard locations">
+
+      <!-- Mobile-only controls -->
+      <button id="mobile-open" class="mobile-toggle" aria-label="Open vineyard list">
+        Vineyard List
+      </button>
+      <div id="mobile-panel" class="mobile-panel" aria-hidden="true">
+        <div class="mobile-panel-header">
+          <div class="mobile-title">Vineyard Sources</div>
+          <button id="mobile-close" class="mobile-close" aria-label="Close list">×</button>
+        </div>
+        <div class="mobile-count" id="mobile-count"></div>
+        <div class="mobile-list" id="mobile-list"></div>
+      </div>
+
       <div class="sidebar-toggle-fab" id="sidebar-fab">
         <button class="btn" id="expand-sidebar" title="Show sidebar">Show sidebar</button>
       </div>
@@ -357,6 +455,68 @@
         layout:{ 'text-field':['get','Name'], 'text-size':12, 'text-offset':[0,1.1], 'text-anchor':'top', 'text-allow-overlap': true },
         paint:{ 'text-color':'#eef2f7', 'text-halo-color':'#0b0c10', 'text-halo-width':1.2 }
       });
+    }
+
+    
+    // ---------- Mobile panel logic ----------
+    const mobOpenBtn = document.getElementById('mobile-open');
+    const mobCloseBtn = document.getElementById('mobile-close');
+    const mobPanel = document.getElementById('mobile-panel');
+    const mobListEl = document.getElementById('mobile-list');
+    const mobCountEl = document.getElementById('mobile-count');
+
+    function openMobilePanel(){
+      if (!mobPanel) return;
+      mobPanel.classList.add('open');
+      mobPanel.setAttribute('aria-hidden', 'false');
+    }
+    function closeMobilePanel(){
+      if (!mobPanel) return;
+      mobPanel.classList.remove('open');
+      mobPanel.setAttribute('aria-hidden', 'true');
+    }
+    if (mobOpenBtn) mobOpenBtn.addEventListener('click', openMobilePanel);
+    if (mobCloseBtn) mobCloseBtn.addEventListener('click', closeMobilePanel);
+
+    // Build the mobile list from current names
+    function rebuildMobileList(names){
+      if (!mobListEl) return;
+      mobListEl.innerHTML = '';
+      const items = names || (typeof namesList !== 'undefined' ? namesList : []);
+      items.forEach(nm => {
+        const row = document.createElement('div');
+        row.className = 'mobile-item';
+        row.innerHTML = `
+          <div class="mi-name">${nm}</div>
+          <button class="mobile-fly" aria-label="Fly to ${nm}">Fly To Vineyard</button>
+        `;
+        const btn = row.querySelector('.mobile-fly');
+        btn.addEventListener('click', () => {
+          try { selectByName(nm); } catch(e){ console.error('selectByName failed', e); }
+          closeMobilePanel();
+        });
+        // Also tap anywhere on row to select/fly
+        row.addEventListener('click', (e) => {
+          if (e.target !== btn) { try { selectByName(nm); } catch(e){} closeMobilePanel(); }
+        });
+        mobListEl.appendChild(row);
+      });
+      if (mobCountEl) {
+        const count = items.length;
+        mobCountEl.textContent = `${count} vineyard${count===1?'':'s'}`;
+      }
+    }
+
+    // Patch buildList to also refresh the mobile list without changing desktop behavior
+    if (typeof buildList === 'function'){
+      const _buildList = buildList;
+      buildList = function(names){
+        _buildList(names);
+        try { rebuildMobileList(names); } catch(e){ console.warn('Mobile list rebuild failed', e); }
+      };
+    } else {
+      // If buildList isn't found yet, schedule after load
+      setTimeout(() => { try { rebuildMobileList(typeof namesList!=='undefined'?namesList:[]); } catch(e){} }, 800);
     }
 
     // ===== Init =====
