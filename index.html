@@ -62,19 +62,21 @@
 }
 
 
-/* ---------- Mobile sidebar / bottom sheet (mobile only, leave desktop intact) ---------- */
+/* ---------- Mobile sidebar / bottom sheet ---------- */
 .mobile-toggle{
-  position: absolute;
+  position: fixed;
   left: 12px;
-  bottom: 12px;
-  z-index: 9999;
-  display: none; /* hidden on desktop */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  z-index: 2147483647; /* max overlay */
+  display: inline-flex; /* visible by default */
+  align-items: center;
   padding: 10px 14px;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
   background: #ffffff;
   box-shadow: 0 4px 12px rgba(0,0,0,.12);
   font: 600 14px/1 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  pointer-events: auto;
 }
 .mobile-panel{
   position: fixed;
@@ -86,7 +88,7 @@
   box-shadow: 0 -12px 30px rgba(0,0,0,.18);
   transform: translateY(105%);
   transition: transform .3s ease;
-  z-index: 10000;
+  z-index: 2147483600;
   display: flex;
   flex-direction: column;
 }
@@ -129,10 +131,9 @@
   font-weight: 600;
 }
 
-/* Show mobile UI & hide desktop sidebar below 768px */
-@media (max-width: 768px){
-  .sidebar{ display: none !important; }
-  .mobile-toggle{ display: inline-flex; align-items:center; }
+/* Hide on desktop screens only */
+@media (min-width: 769px){
+  .mobile-toggle, .mobile-panel { display: none !important; }
 }
 
 </style>
@@ -448,13 +449,20 @@
     }
 
     
-    // ---------- Mobile panel logic ----------
+    // ---------- Mobile panel logic (force-show on iOS) ----------
     (function(){
       const mobOpenBtn = document.getElementById('mobile-open');
       const mobCloseBtn = document.getElementById('mobile-close');
       const mobPanel = document.getElementById('mobile-panel');
       const mobListEl = document.getElementById('mobile-list');
       const mobCountEl = document.getElementById('mobile-count');
+
+      // Force show on iOS WebKit (Safari/Chrome) in case CSS gets overridden
+      const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+      const isiOS = /iPad|iPhone|iPod/.test(ua);
+      if (isiOS && mobOpenBtn) {
+        mobOpenBtn.style.display = 'inline-flex';
+      }
 
       function openMobilePanel(){
         if (!mobPanel) return;
@@ -498,7 +506,6 @@
         }
       }
 
-      // Mirror desktop list into mobile list whenever buildList runs
       if (typeof buildList === 'function'){
         const _buildList = buildList;
         buildList = function(names){
@@ -507,7 +514,6 @@
         };
       }
 
-      // If index builds async, hook into rebuildFromDataset if available
       if (typeof rebuildFromDataset === 'function'){
         const _rebuild = rebuildFromDataset;
         rebuildFromDataset = async function(){
@@ -515,7 +521,6 @@
           try { rebuildMobileList(typeof namesList!=='undefined'?namesList:[]); } catch(err){}
         };
       } else {
-        // Fallback: try once after load
         setTimeout(() => { try { rebuildMobileList(typeof namesList!=='undefined'?namesList:[]); } catch(err){} }, 1000);
       }
     })();
