@@ -296,36 +296,13 @@
       document.querySelectorAll('.item').forEach(el => el.classList.toggle('active', el.dataset.id === name));
       const active = document.querySelector('.item.active'); if (active) active.scrollIntoView({block:'nearest', behavior:'smooth'});
     }
-    
-function showPopup(name){
-  const rec = nameIndex[name]; if (!rec) return;
-  const p = rec.props || {}; 
-  const lngLat = rec.center;
-
-  // AVA line: prefer SubAVA, fallback to AVA
-  const avaLine = p.SubAVA ? `AVA: ${p.SubAVA}` : (p.AVA ? `AVA: ${p.AVA}` : '');
-
-  // Varietals line from exact keys "Varietal 1/2/3"
-  const keys = ['Varietal 1','Varietal 2','Varietal 3'];
-  const varietals = keys.map(k => p[k]).filter(v => v && String(v).trim()).map(v => String(v).trim());
-  const vLabel = varietals.length > 1 ? 'Varietals' : 'Varietal';
-  const varietalLine = varietals.length ? `${vLabel}: ${varietals.join(', ')}` : '';
-
-  const html = `
-    <div>
-      <div style="font-weight:700; margin-bottom:4px; text-align:center;">${p.Name || 'Vineyard'}</div>
-      ${avaLine ? `<div style="font-size:12px; opacity:.8;">${avaLine}</div>` : ''}
-      ${varietalLine ? `<div style="margin-top:4px;">${varietalLine}</div>` : ''}
-      ${p.Facts ? `<div style="margin-top:6px;">${p.Facts}</div>` : ''}
-      ${p.URL ? `<div style="margin-top:8px;"><a class="btn" href="${p.URL}" target="_blank" rel="noopener">Learn more →</a></div>` : ''}
-    </div>`;
-
-  popup.setLngLat(lngLat).setHTML(html).addTo(map);
-}
-
-</div>
+    function showPopup(name){
+      const rec = nameIndex[name]; if (!rec) return;
+      const p = rec.props, lngLat = rec.center;
+      const html = `
+        <div>
+          <div style="font-weight:700; margin-bottom:4px;">${p.Name || 'Vineyard'}</div>
           ${p.SubAVA ? `<div style="font-size:12px; opacity:.8;">AVA: ${p.SubAVA}</div>` : ''}
-          ${(() => { const vs = []; for (const k in p) { if (/^varietal\s*\d+$/i.test(k) && p[k]) { const v = String(p[k]).trim(); if (v) vs.push(v); } } return vs.length ? `<div style="margin-top:4px;">Varietals: ${vs.join(', ')}</div>` : ''; })()}
           ${p.Facts ? `<div style="margin-top:6px;">${p.Facts}</div>` : ''}
           ${p.URL ? `<div style="margin-top:8px;"><a class="btn" href="${p.URL}" target="_blank" rel="noopener">Learn more →</a></div>` : ''}
         </div>`;
