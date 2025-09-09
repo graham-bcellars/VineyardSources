@@ -303,7 +303,7 @@
         <div>
           <div style="font-weight:700; margin-bottom:4px;">${p.Name || 'Vineyard'}</div>
           ${p.SubAVA ? `<div style="font-size:12px; opacity:.8;">Sub AVA: ${p.SubAVA}</div>` : (p.AVA ? `<div style="font-size:12px; opacity:.8;">AVA: ${p.AVA}</div>` : "")}
-      ${(() => { const vs = [p["Varietal 1"], p["Varietal 2"], p["Varietal 3"]].filter(v => v && String(v).trim()); return vs.length ? `<div style="margin-top:4px;">Varietals: ${vs.join(", ")}</div>` : ""; })()}
+      ${(() => { const out = []; const add = v => { if (v != null) { const t = String(v).trim(); if (t) out.push(t); } }; for (const k in p) { if (/^varietal\s*\d+$/i.test(k)) add(p[k]); } if (out.length === 0) { if (p['Varietal']) add(p['Varietal']); if (p['Varietals']) { String(p['Varietals']).split(',').forEach(s => add(s)); } } const label = out.length > 1 ? 'Varietals' : 'Varietal'; return out.length ? `<div style="margin-top:4px;">${label}: ${out.join(', ')}</div>` : ''; })()}
           ${p.Facts ? `<div style="margin-top:6px;">${p.Facts}</div>` : ''}
           ${p.URL ? `<div style="margin-top:8px;"><a class="btn" href="${p.URL}" target="_blank" rel="noopener">Learn more →</a></div>` : ''}
         </div>`;
@@ -378,7 +378,7 @@
         } else if (center) {
           const maxZ = map.getMaxZoom ? map.getMaxZoom() : 22;
           const finalZ = Math.min(targetZoom, maxZ);
-          map.flyTo({ center, zoom: finalZ, pitch: 40, speed: 0.1, curve: 1, essential: true });
+          map.flyTo({ center, zoom: finalZ, pitch: 40, speed: 0.2, curve: 2, essential: true });
         }
       };
 
