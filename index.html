@@ -302,7 +302,8 @@
       const html = `
         <div>
           <div style="font-weight:700; margin-bottom:4px;">${p.Name || 'Vineyard'}</div>
-          ${p.SubAVA ? `<div style="font-size:12px; opacity:.8;">Sub AVA: ${p.SubAVA}</div>` : (p.AVA ? `<div style="font-size:12px; opacity:.8;">AVA: ${p.AVA}</div>` : '')}
+          ${p.SubAVA ? `<div style="font-size:12px; opacity:.8;">Sub AVA: ${p.SubAVA}</div>` : (p.AVA ? `<div style="font-size:12px; opacity:.8;">AVA: ${p.AVA}</div>` : "")}
+      ${(() => { const vs = [p["Varietal 1"], p["Varietal 2"], p["Varietal 3"]].filter(v => v && String(v).trim()); return vs.length ? `<div style="margin-top:4px;">Varietals: ${vs.join(", ")}</div>` : ""; })()}
           ${p.Facts ? `<div style="margin-top:6px;">${p.Facts}</div>` : ''}
           ${p.URL ? `<div style="margin-top:8px;"><a class="btn" href="${p.URL}" target="_blank" rel="noopener">Learn more →</a></div>` : ''}
         </div>`;
