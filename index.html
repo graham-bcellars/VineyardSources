@@ -378,7 +378,7 @@
         } else if (center) {
           const maxZ = map.getMaxZoom ? map.getMaxZoom() : 22;
           const finalZ = Math.min(targetZoom, maxZ);
-          map.flyTo({ center, zoom: finalZ, pitch: 40, speed: 0.2, curve: 2, essential: true });
+          map.flyTo({ center, zoom: finalZ, pitch: 40, speed: 0.1, curve: 1, essential: true });
         }
       };
 
